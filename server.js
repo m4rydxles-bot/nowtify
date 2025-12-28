@@ -21,7 +21,7 @@ const SUPABASE_KEY = process.env.SUPABASE_KEY;
 const JWT_SECRET = process.env.JWT_SECRET || 'as89d7as9d87as9d87as98d7_as98d7sa';
 const PORT = process.env.PORT || 3000;
 const REDIRECT_URI = process.env.SPOTIFY_REDIRECT_URI; 
-const FRONTEND_URL = process.env.FRONTEND_URL || 'https://nowtify-production-b5f3.up.railway.app';
+const FRONTEND_URL = process.env.FRONTEND_URL || 'https://allahgibidxles.up.railway.app/dashboard.html';
 
 const app = express();
 const server = createServer(app);
