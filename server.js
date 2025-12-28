@@ -12,15 +12,16 @@ import bcrypt from 'bcryptjs';
 
 dotenv.config();
 
+// --- YAPILANDIRMA ---
 const CLIENT_ID = process.env.SPOTIFY_CLIENT_ID;
 const CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
 const YOUTUBE_API_KEY = process.env.YT_KEY;
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_KEY;
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
+const JWT_SECRET = process.env.JWT_SECRET || 'as89d7as9d87as9d87as98d7_as98d7sa';
 const PORT = process.env.PORT || 3000;
 const REDIRECT_URI = process.env.SPOTIFY_REDIRECT_URI; 
-const FRONTEND_URL = process.env.FRONTEND_URL || '';
+const FRONTEND_URL = process.env.FRONTEND_URL || 'https://nowtify-production-b5f3.up.railway.app';
 
 const app = express();
 const server = createServer(app);
@@ -41,10 +42,10 @@ const io = new SocketIoServer(server, {
 app.use(cors({ origin: '*' }));
 app.use(express.json());
 app.use(cookieParser());
-// Statik dosyaları ana dizinden oku
+// Dosyalar artık ana dizinde olduğu için '.' kullandık
 app.use(express.static('.'));
 
-// --- ROTALAR (URL'LERDEKI NOKTALAR KALDIRILDI) ---
+// --- HTML SAYFA ROTALARI ---
 app.get('/', (req, res) => {
     res.sendFile('index.html', { root: '.' });
 });
@@ -62,11 +63,10 @@ app.get('/settings', (req, res) => {
 });
 
 app.get('/signup', (req, res) => {
-    // Dosya adın hangisiyse (sipnup/signup) ona göre kontrol et kanka
     res.sendFile('signup.html', { root: '.' });
 });
 
-// Auth middleware
+// --- AUTH MIDDLEWARE ---
 const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
@@ -85,11 +85,10 @@ const authenticateToken = (req, res, next) => {
 };
 
 let lastTrackUri = '';
-const userSockets = new Map(); // username -> socket.id mapping
+const userSockets = new Map();
 
 // ============= AUTH ROUTES =============
 
-// Signup
 app.post('/api/auth/signup', async (req, res) => {
     try {
         const { username, email, password } = req.body;
@@ -98,21 +97,18 @@ app.post('/api/auth/signup', async (req, res) => {
             return res.status(400).json({ error: 'Tüm alanlar gerekli' });
         }
 
-        // Check if user exists
         const { data: existingUser } = await supabase
             .from('users')
             .select('username')
             .or(`username.eq.${username},email.eq.${email}`)
-            .maybeSingle(); // single() bazen hata verebiliyor, maybeSingle daha güvenli
+            .maybeSingle();
 
         if (existingUser) {
             return res.status(400).json({ error: 'Kullanıcı adı veya email zaten kullanılıyor' });
         }
 
-        // Hash password
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Create user
         const { data: newUser, error } = await supabase
             .from('users')
             .insert([{
@@ -128,7 +124,6 @@ app.post('/api/auth/signup', async (req, res) => {
 
         if (error) throw error;
 
-        // Generate JWT
         const token = jwt.sign(
             { id: newUser.id, username: newUser.username },
             JWT_SECRET,
@@ -149,7 +144,6 @@ app.post('/api/auth/signup', async (req, res) => {
     }
 });
 
-// Login
 app.post('/api/auth/login', async (req, res) => {
     try {
         const { username, password } = req.body;
@@ -158,7 +152,6 @@ app.post('/api/auth/login', async (req, res) => {
             return res.status(400).json({ error: 'Kullanıcı adı ve şifre gerekli' });
         }
 
-        // Get user
         const { data: user, error } = await supabase
             .from('users')
             .select('*')
@@ -169,13 +162,11 @@ app.post('/api/auth/login', async (req, res) => {
             return res.status(401).json({ error: 'Kullanıcı adı veya şifre hatalı' });
         }
 
-        // Verify password
         const validPassword = await bcrypt.compare(password, user.password);
         if (!validPassword) {
             return res.status(401).json({ error: 'Kullanıcı adı veya şifre hatalı' });
         }
 
-        // Generate JWT
         const token = jwt.sign(
             { id: user.id, username: user.username },
             JWT_SECRET,
@@ -197,7 +188,6 @@ app.post('/api/auth/login', async (req, res) => {
     }
 });
 
-// Get current user
 app.get('/api/auth/me', authenticateToken, async (req, res) => {
     try {
         const { data: user } = await supabase
@@ -217,16 +207,15 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
     }
 });
 
-// ============= USER ROUTES =============
+// ============= USER & PROFILE ROUTES =============
 
-// Get user profile
 app.get('/api/users/:username', async (req, res) => {
     try {
         const { username } = req.params;
 
         const { data: user } = await supabase
             .from('users')
-            .select('id, username, profile_visibility, created_at')
+            .select('id, username, profile_visibility, created_at, history_limit')
             .eq('username', username)
             .maybeSingle();
 
@@ -234,7 +223,6 @@ app.get('/api/users/:username', async (req, res) => {
             return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
         }
 
-        // Check if profile is public
         if (user.profile_visibility === 'private') {
             const authHeader = req.headers['authorization'];
             const token = authHeader && authHeader.split(' ')[1];
@@ -253,7 +241,6 @@ app.get('/api/users/:username', async (req, res) => {
             }
         }
 
-        // Get listening history
         const { data: history } = await supabase
             .from('listening_history')
             .select('*')
@@ -275,7 +262,6 @@ app.get('/api/users/:username', async (req, res) => {
     }
 });
 
-// Update user settings
 app.put('/api/users/settings', authenticateToken, async (req, res) => {
     try {
         const { profile_visibility, history_limit } = req.body;
@@ -300,7 +286,6 @@ app.put('/api/users/settings', authenticateToken, async (req, res) => {
     }
 });
 
-// Get user's listening history
 app.get('/api/users/:username/history', async (req, res) => {
     try {
         const { username } = req.params;
@@ -450,7 +435,7 @@ async function getLRC(trackTitle, durationMs) {
                 return lines.map(line => `[00:00.00]${line}`).join('\n');
             }
         }
-        return `[00:01.00]Bu şarkı için LRC metni lrclib.net'te bulunamadı.`;
+        return `[00:01.00]Bu şarkı için LRC metni bulunamadı.`;
     } catch (error) {
         console.error("LRC Çekme Hatası:", error.message);
         return `[00:01.00]LRC Lib servisiyle bağlantı kurulamadı.`;
