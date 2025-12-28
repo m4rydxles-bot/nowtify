@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ayarlar - Nowtify</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="logo">🎵 NOWTIFY</div>
+            <div class="nav-links">
+                <a href="/dashboard.html">Dashboard</a>
+                <a href="#" id="profile-link">Profilim</a>
+                <a href="/settings.html">Ayarlar</a>
+                <a href="#" onclick="logout()">Çıkış</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="dashboard-header">
+            <h1>⚙️ Ayarlar</h1>
+            <p>Profil tercihlerini özelleştir</p>
+        </div>
+
+        <div id="success-message" class="success-message" style="display: none;"></div>
+        <div id="error-message" class="error-message" style="display: none;"></div>
+
+        <!-- Profile Settings -->
+        <div class="settings-section">
+            <h2>👤 Profil Ayarları</h2>
+            
+            <div class="setting-item">
+                <div class="setting-info">
+                    <h3>Kullanıcı Adı</h3>
+                    <p id="current-username">username</p>
+                </div>
+            </div>
+
+            <div class="setting-item">
+                <div class="setting-info">
+                    <h3>E-posta</h3>
+                    <p id="current-email">email@example.com</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Privacy Settings -->
+        <div class="settings-section">
+            <h2>🔒 Gizlilik Ayarları</h2>
+            
+            <div class="setting-item">
+                <div class="setting-info">
+                    <h3>Profil Görünürlüğü</h3>
+                    <p>Profilin herkese açık mı yoksa gizli mi olsun?</p>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="privacy-toggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <p style="color: var(--text-secondary); font-size: 14px; margin-top: 10px;">
+                Açık = Herkese Açık | Kapalı = Gizli
+            </p>
+        </div>
+
+        <!-- History Settings -->
+        <div class="settings-section">
+            <h2>📜 Dinleme Geçmişi Ayarları</h2>
+            
+            <div class="setting-item" style="display: block;">
+                <div class="setting-info" style="margin-bottom: 15px;">
+                    <h3>Gösterilecek Şarkı Sayısı</h3>
+                    <p>Profilinde kaç adet şarkı geçmişi görünsün?</p>
+                </div>
+                <select id="history-limit" class="form-group" style="width: 100%; padding: 12px; background: var(--dark-bg); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: var(--text-primary); font-size: 16px;">
+                    <option value="10">10 Şarkı</option>
+                    <option value="15">15 Şarkı</option>
+                    <option value="25">25 Şarkı</option>
+                    <option value="30">30 Şarkı</option>
+                    <option value="45">45 Şarkı</option>
+                    <option value="50">50 Şarkı</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Spotify Settings -->
+        <div class="settings-section">
+            <h2>🎵 Spotify Bağlantısı</h2>
+            
+            <div class="setting-item">
+                <div class="setting-info">
+                    <h3>Spotify Durumu</h3>
+                    <p id="spotify-status">Bağlı değil</p>
+                </div>
+                <button id="reconnect-spotify" class="btn btn-primary">Yeniden Bağlan</button>
+            </div>
+        </div>
+
+        <!-- Save Button -->
+        <div style="text-align: center; margin-top: 30px;">
+            <button id="save-settings" class="btn btn-primary" style="min-width: 200px;">Ayarları Kaydet</button>
+        </div>
+    </div>
+
+    <script src="/js/utils.js"></script>
+    <script>
+        requireAuth();
+
+        const user = getCurrentUser();
+        document.getElementById('profile-link').href = `/profile.html?user=${user.username}`;
+        document.getElementById('current-username').textContent = user.username;
+
+        // Load current settings
+        async function loadSettings() {
+            try {
+                const data = await apiRequest('/api/auth/me');
+                
+                document.getElementById('current-email').textContent = data.user.email;
+                document.getElementById('privacy-toggle').checked = data.user.profile_visibility === 'public';
+                document.getElementById('history-limit').value = data.user.history_limit || 25;
+                
+                if (data.user.spotify_connected) {
+                    document.getElementById('spotify-status').textContent = 'Bağlı ✅';
+                } else {
+                    document.getElementById('spotify-status').textContent = 'Bağlı değil ❌';
+                }
+            } catch (error) {
+                showError('Ayarlar yüklenirken hata oluştu');
+            }
+        }
+
+        // Save settings
+        document.getElementById('save-settings').addEventListener('click', async () => {
+            hideMessage('success-message');
+            hideMessage('error-message');
+
+            const profileVisibility = document.getElementById('privacy-toggle').checked ? 'public' : 'private';
+            const historyLimit = parseInt(document.getElementById('history-limit').value);
+
+            try {
+                await apiRequest('/api/users/settings', {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        profile_visibility: profileVisibility,
+                        history_limit: historyLimit
+                    })
+                });
+
+                showSuccess('Ayarlar başarıyla kaydedildi! ✅');
+                setTimeout(() => hideMessage('success-message'), 3000);
+            } catch (error) {
+                showError('Ayarlar kaydedilirken hata oluştu: ' + error.message);
+            }
+        });
+
+        // Reconnect Spotify
+        document.getElementById('reconnect-spotify').addEventListener('click', async () => {
+            try {
+                const data = await apiRequest('/api/spotify/login');
+                window.location.href = data.auth_url;
+            } catch (error) {
+                showError('Spotify bağlantı hatası: ' + error.message);
+            }
+        });
+
+        loadSettings();
+    </script>
+</body>
+</html>

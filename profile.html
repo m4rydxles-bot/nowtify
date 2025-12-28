@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profil - Nowtify</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="logo">
+                <i class="fas fa-music"></i>
+                Nowtify
+            </div>
+            <div class="nav-links" id="nav-links">
+                <a href="/index.html"><i class="fas fa-home"></i> Ana Sayfa</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div id="loading" class="loading" style="min-height: 50vh;">
+            <div class="spinner"></div>
+            <p style="margin-top: 16px; color: var(--text-secondary);">Profil yükleniyor...</p>
+        </div>
+
+        <div id="profile-content" style="display: none;">
+            <div class="dashboard-header">
+                <h1>
+                    <i class="fas fa-user-circle"></i>
+                    <span id="profile-username"></span>
+                </h1>
+                <p id="member-since"></p>
+            </div>
+
+            <div id="now-playing-section" style="display: none;">
+                <h2 style="margin-top: 32px; margin-bottom: 16px; font-size: 18px;">
+                    <i class="fas fa-play-circle"></i> Şu Anda Çalıyor
+                </h2>
+                <div class="now-playing" id="now-playing"></div>
+            </div>
+
+            <div style="margin-top: 32px;">
+                <h2 style="margin-bottom: 16px; font-size: 18px;">
+                    <i class="fas fa-history"></i> Dinleme Geçmişi
+                </h2>
+                <div class="history-list" id="history-list"></div>
+            </div>
+        </div>
+
+        <div id="error-content" style="display: none; text-align: center; padding: 80px 20px;">
+            <i class="fas fa-exclamation-circle" style="font-size: 48px; color: var(--danger); margin-bottom: 16px;"></i>
+            <h2 style="color: var(--text-primary); margin-bottom: 12px; font-size: 20px;" id="error-title"></h2>
+            <p style="color: var(--text-secondary); font-size: 14px;" id="error-message"></p>
+            <a href="/index.html" class="btn btn-primary" style="margin-top: 24px; display: inline-flex;">
+                <i class="fas fa-home"></i> Ana Sayfaya Dön
+            </a>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="/js/utils.js"></script>
+    <script>
+        const username = getUrlParameter('user');
+        
+        if (!username) {
+            window.location.href = '/index.html';
+        }
+
+        if (isLoggedIn()) {
+            document.getElementById('nav-links').innerHTML = `
+                <a href="/dashboard.html"><i class="fas fa-home"></i> Dashboard</a>
+                <a href="/settings.html"><i class="fas fa-cog"></i> Ayarlar</a>
+                <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Çıkış</a>
+            `;
+        }
+
+        async function loadProfile() {
+            try {
+                const data = await apiRequest(`/api/users/${username}`);
+                
+                document.getElementById('profile-username').textContent = data.user.username;
+                document.getElementById('member-since').textContent = `Üye: ${new Date(data.user.member_since).toLocaleDateString('tr-TR')}`;
+                
+                const historyList = document.getElementById('history-list');
+                if (data.history && data.history.length > 0) {
+                    historyList.innerHTML = data.history.map(track => `
+                        <div class="history-item">
+                            <img src="${track.album_image || '/img/placeholder.png'}" alt="Album">
+                            <div class="history-item-info">
+                                <h4>${track.track_name}</h4>
+                                <p>${track.artist_name} • ${formatDate(track.played_at)}</p>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    historyList.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 32px;">Henüz dinleme geçmişi yok</p>';
+                }
+
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('profile-content').style.display = 'block';
+
+            } catch (error) {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error-content').style.display = 'block';
+                
+                if (error.message.includes('gizli')) {
+                    document.getElementById('error-title').textContent = 'Bu Profil Gizli';
+                    document.getElementById('error-message').textContent = 'Bu kullanıcı profilini gizli olarak ayarlamış.';
+                } else if (error.message.includes('bulunamadı')) {
+                    document.getElementById('error-title').textContent = 'Kullanıcı Bulunamadı';
+                    document.getElementById('error-message').textContent = 'Aradığınız kullanıcı bulunamadı.';
+                } else {
+                    document.getElementById('error-title').textContent = 'Bir Hata Oluştu';
+                    document.getElementById('error-message').textContent = error.message;
+                }
+            }
+        }
+
+        loadProfile();
+        setInterval(() => {
+            if (document.getElementById('profile-content').style.display === 'block') {
+                loadProfile();
+            }
+        }, 30000);
+    </script>
+</body>
+</html>
