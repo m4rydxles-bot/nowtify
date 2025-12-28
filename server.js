@@ -20,6 +20,7 @@ const SUPABASE_KEY = process.env.SUPABASE_KEY;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
 const PORT = process.env.PORT || 3000;
 const REDIRECT_URI = process.env.SPOTIFY_REDIRECT_URI; 
+const FRONTEND_URL = process.env.FRONTEND_URL || '';
 
 const app = express();
 const server = createServer(app);
@@ -40,29 +41,30 @@ const io = new SocketIoServer(server, {
 app.use(cors({ origin: '*' }));
 app.use(express.json());
 app.use(cookieParser());
+// Statik dosyaları ana dizinden oku
 app.use(express.static('.'));
 
+// --- ROTALAR (URL'LERDEKI NOKTALAR KALDIRILDI) ---
 app.get('/', (req, res) => {
     res.sendFile('index.html', { root: '.' });
 });
 
-app.get('./dashboard', (req, res) => {
+app.get('/dashboard', (req, res) => {
     res.sendFile('dashboard.html', { root: '.' });
 });
 
-app.get('./profile', (req, res) => {
+app.get('/profile', (req, res) => {
     res.sendFile('profile.html', { root: '.' });
 });
 
-app.get('./settings', (req, res) => {
+app.get('/settings', (req, res) => {
     res.sendFile('settings.html', { root: '.' });
 });
 
-app.get('./signup', (req, res) => {
-    res.sendFile('sipnup.html', { root: '.' });
+app.get('/signup', (req, res) => {
+    // Dosya adın hangisiyse (sipnup/signup) ona göre kontrol et kanka
+    res.sendFile('signup.html', { root: '.' });
 });
-
-
 
 // Auth middleware
 const authenticateToken = (req, res, next) => {
@@ -101,7 +103,7 @@ app.post('/api/auth/signup', async (req, res) => {
             .from('users')
             .select('username')
             .or(`username.eq.${username},email.eq.${email}`)
-            .single();
+            .maybeSingle(); // single() bazen hata verebiliyor, maybeSingle daha güvenli
 
         if (existingUser) {
             return res.status(400).json({ error: 'Kullanıcı adı veya email zaten kullanılıyor' });
@@ -161,7 +163,7 @@ app.post('/api/auth/login', async (req, res) => {
             .from('users')
             .select('*')
             .eq('username', username)
-            .single();
+            .maybeSingle();
 
         if (error || !user) {
             return res.status(401).json({ error: 'Kullanıcı adı veya şifre hatalı' });
@@ -226,7 +228,7 @@ app.get('/api/users/:username', async (req, res) => {
             .from('users')
             .select('id, username, profile_visibility, created_at')
             .eq('username', username)
-            .single();
+            .maybeSingle();
 
         if (!user) {
             return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
@@ -234,7 +236,6 @@ app.get('/api/users/:username', async (req, res) => {
 
         // Check if profile is public
         if (user.profile_visibility === 'private') {
-            // Check if request is from the owner
             const authHeader = req.headers['authorization'];
             const token = authHeader && authHeader.split(' ')[1];
             
@@ -304,18 +305,16 @@ app.get('/api/users/:username/history', async (req, res) => {
     try {
         const { username } = req.params;
 
-        // Get user
         const { data: user } = await supabase
             .from('users')
             .select('id, history_limit')
             .eq('username', username)
-            .single();
+            .maybeSingle();
 
         if (!user) {
             return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
         }
 
-        // Get history
         const { data: history } = await supabase
             .from('listening_history')
             .select('*')
@@ -338,7 +337,7 @@ app.get('/api/spotify/login', authenticateToken, (req, res) => {
     }
 
     const scope = 'user-read-playback-state user-read-currently-playing';
-    const state = req.user.id; // Use user ID as state
+    const state = req.user.id; 
     
     const authUrl = 'https://accounts.spotify.com/authorize?' +
         new URLSearchParams({
@@ -354,7 +353,7 @@ app.get('/api/spotify/login', authenticateToken, (req, res) => {
 
 app.get('/callback', async (req, res) => {
     const code = req.query.code || null;
-    const state = req.query.state || null; // user ID
+    const state = req.query.state || null; 
 
     if (!code) {
         return res.redirect(`${FRONTEND_URL}?error=yetki_reddedildi`);
@@ -379,7 +378,6 @@ app.get('/callback', async (req, res) => {
         const accessToken = tokenData.access_token;
         const refreshToken = tokenData.refresh_token;
 
-        // Save tokens to user
         if (state) {
             await supabase
                 .from('users')
@@ -390,14 +388,13 @@ app.get('/callback', async (req, res) => {
                 .eq('id', state);
         }
 
-        res.redirect(`${FRONTEND_URL}/dashboard.html?spotify_connected=true`);
+        res.redirect(`${FRONTEND_URL}/dashboard?spotify_connected=true`);
     } catch (error) {
         console.error('Spotify token error:', error);
         res.redirect(`${FRONTEND_URL}?error=spotify_baglanti_hatasi`);
     }
 });
 
-// Get currently playing track
 app.get('/api/spotify/now-playing', authenticateToken, async (req, res) => {
     try {
         const { data: user } = await supabase
@@ -479,7 +476,6 @@ async function searchYoutube(query) {
     }
 }
 
-// Save track to history
 async function saveToHistory(userId, trackData) {
     try {
         const track = trackData.item;
@@ -524,7 +520,6 @@ io.on('connection', (socket) => {
         const trackTitle = `${track.artists.map(a => a.name).join(', ')} - ${track.name}`;
         const durationMs = track.duration_ms;
 
-        // Save to history if new track
         if (trackUri !== lastTrackUri && data.userId) {
             await saveToHistory(data.userId, data);
         }
@@ -544,13 +539,11 @@ io.on('connection', (socket) => {
                     lrc: lrcContent,
                     albumImage: track.album.images[0]?.url
                 });
-                return;
             } else {
                 io.emit('syncCommand', { 
                     command: 'stop', 
                     trackTitle: `YouTube'da bulunamadı: ${trackTitle}` 
                 });
-                return;
             }
         }
 
@@ -570,7 +563,6 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
-        // Remove from userSockets
         for (let [username, socketId] of userSockets.entries()) {
             if (socketId === socket.id) {
                 userSockets.delete(username);
@@ -582,4 +574,5 @@ io.on('connection', (socket) => {
 });
 
 server.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`)
+    console.log(`🚀 Server running on port ${PORT}`);
+});
