@@ -35,12 +35,12 @@
             </form>
             
             <div class="auth-links">
-                Hesabın yok mu? <a href="/signup.html">Kayıt Ol</a>
+                Hesabın yok mu? <a href="./signup.html">Kayıt Ol</a>
             </div>
         </div>
     </div>
 
-    <script src="/js/utils.js"></script>
+    <script src="utils.js"></script>
     <script>
         requireGuest();
 
@@ -66,7 +66,7 @@
 
                 setToken(data.token);
                 setCurrentUser(data.user);
-                window.location.href = '/dashboard.html';
+                window.location.href = './dashboard.html';
             } catch (error) {
                 showError(error.message);
             }
