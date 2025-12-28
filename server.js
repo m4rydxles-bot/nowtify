@@ -41,7 +41,7 @@ const io = new SocketIoServer(server, {
 app.use(cors({ origin: '*' }));
 app.use(express.json());
 app.use(cookieParser());
-app.use(express.static('../public'));
+app.use(express.static('public'));
 
 // Auth middleware
 const authenticateToken = (req, res, next) => {
