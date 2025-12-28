@@ -20,7 +20,7 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_KEY;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
 const PORT = process.env.PORT || 3000;
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:8080';
+const REDIRECT_URI = process.env.SPOTIFY_REDIRECT_URI; 
 
 const app = express();
 const server = createServer(app);
