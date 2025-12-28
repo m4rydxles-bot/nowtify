@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Nowtify</title>
-    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <nav class="navbar">
@@ -14,9 +14,9 @@
                 Nowtify
             </div>
             <div class="nav-links">
-                <a href="/dashboard.html"><i class="fas fa-home"></i> Dashboard</a>
+                <a href="./dashboard.html"><i class="fas fa-home"></i> Dashboard</a>
                 <a href="#" id="profile-link"><i class="fas fa-user"></i> Profil</a>
-                <a href="/settings.html"><i class="fas fa-cog"></i> Ayarlar</a>
+                <a href="./settings.html"><i class="fas fa-cog"></i> Ayarlar</a>
                 <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Çıkış</a>
             </div>
         </div>
@@ -72,13 +72,13 @@
     </div>
 
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
-    <script src="/js/utils.js"></script>
+    <script src="./utils.js"></script>
     <script>
         requireAuth();
 
         const user = getCurrentUser();
         document.getElementById('username').textContent = user.username;
-        document.getElementById('profile-link').href = `/profile.html?user=${user.username}`;
+        document.getElementById('profile-link').href = `./profile.html?user=${user.username}`;
         document.getElementById('profile-url').value = `${window.location.origin}/profile.html?user=${user.username}`;
 
         if (getUrlParameter('spotify_connected') === 'true') {
