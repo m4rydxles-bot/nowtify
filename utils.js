@@ -1,5 +1,5 @@
 // API Base URL - Railway backend URL
-const API_BASE_URL = 'https://nowtify-production.up.railway.app';
+const API_BASE_URL = 'https://allahgibidxles.up.railway.app/';
 
 // Get token from localStorage
 function getToken() {
@@ -70,14 +70,14 @@ function isLoggedIn() {
 // Redirect if not logged in
 function requireAuth() {
     if (!isLoggedIn()) {
-        window.location.href = './index.html';
+        window.location.href = '/index.html';
     }
 }
 
 // Redirect if logged in
 function requireGuest() {
     if (isLoggedIn()) {
-        window.location.href = './dashboard.html';
+        window.location.href = '/dashboard.html';
     }
 }
 
@@ -85,7 +85,7 @@ function requireGuest() {
 function logout() {
     removeToken();
     removeCurrentUser();
-    window.location.href = './index.html';
+    window.location.href = '/index.html';
 }
 
 // Show error message
