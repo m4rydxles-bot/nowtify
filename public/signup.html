@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kayıt Ol - Nowtify</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-box">
+            <h1>
+                <i class="fas fa-music"></i>
+                Nowtify
+            </h1>
+            <p>Yeni hesap oluştur</p>
+            
+            <div id="error-message" class="error-message" style="display: none;"></div>
+            
+            <form id="signup-form">
+                <div class="form-group">
+                    <label for="username"><i class="fas fa-user"></i> Kullanıcı Adı</label>
+                    <input type="text" id="username" name="username" required minlength="3">
+                </div>
+                
+                <div class="form-group">
+                    <label for="email"><i class="fas fa-envelope"></i> E-posta</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password"><i class="fas fa-lock"></i> Şifre</label>
+                    <input type="password" id="password" name="password" required minlength="6">
+                </div>
+                
+                <div class="form-group">
+                    <label for="confirm-password"><i class="fas fa-lock"></i> Şifre Tekrar</label>
+                    <input type="password" id="confirm-password" name="confirm-password" required>
+                </div>
+                
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    <i class="fas fa-user-plus"></i>
+                    Kayıt Ol
+                </button>
+            </form>
+            
+            <div class="auth-links">
+                Zaten hesabın var mı? <a href="/index.html">Giriş Yap</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/utils.js"></script>
+    <script>
+        requireGuest();
+
+        document.getElementById('signup-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideMessage('error-message');
+
+            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+
+            if (password !== confirmPassword) {
+                showError('Şifreler eşleşmiyor');
+                return;
+            }
+
+            try {
+                const data = await apiRequest('/api/auth/signup', {
+                    method: 'POST',
+                    body: JSON.stringify({ username, email, password })
+                });
+
+                setToken(data.token);
+                setCurrentUser(data.user);
+                window.location.href = '/dashboard.html';
+            } catch (error) {
+                showError(error.message);
+            }
+        });
+    </script>
+</body>
+</html>
