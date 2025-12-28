@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kayıt Ol - Nowtify</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
     <div class="auth-container">
@@ -15,7 +16,7 @@
             </h1>
             <p>Yeni hesap oluştur</p>
             
-            <div id="error-message" class="error-message" style="display: none;"></div>
+            <div id="error-message" class="error-message" style="display: none; color: #ff4d4d; margin-bottom: 15px; text-align: center;"></div>
             
             <form id="signup-form">
                 <div class="form-group">
@@ -38,25 +39,35 @@
                     <input type="password" id="confirm-password" name="confirm-password" required>
                 </div>
                 
-                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                <button type="submit" id="submit-btn" class="btn btn-primary" style="width: 100%; cursor: pointer;">
                     <i class="fas fa-user-plus"></i>
                     Kayıt Ol
                 </button>
             </form>
             
             <div class="auth-links">
-                Zaten hesabın var mı? <a href="./index.html">Giriş Yap</a>
+                Zaten hesabın var mı? <a href="index.html">Giriş Yap</a>
             </div>
         </div>
     </div>
 
     <script src="utils.js"></script>
     <script>
-        requireGuest();
+        // Sayfa yüklendiğinde çalıştır
+        window.onload = () => {
+            if (typeof requireGuest === "function") {
+                requireGuest();
+            }
+        };
 
         document.getElementById('signup-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            hideMessage('error-message');
+            
+            const submitBtn = document.getElementById('submit-btn');
+            const errorDiv = document.getElementById('error-message');
+            
+            // Temizlik
+            errorDiv.style.display = 'none';
 
             const username = document.getElementById('username').value;
             const email = document.getElementById('email').value;
@@ -64,21 +75,32 @@
             const confirmPassword = document.getElementById('confirm-password').value;
 
             if (password !== confirmPassword) {
-                showError('Şifreler eşleşmiyor');
+                errorDiv.textContent = 'Şifreler eşleşmiyor';
+                errorDiv.style.display = 'block';
                 return;
             }
 
             try {
+                // Butonu kilitle ki 50 kere basmasınlar
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'İşleniyor...';
+
                 const data = await apiRequest('/api/auth/signup', {
                     method: 'POST',
                     body: JSON.stringify({ username, email, password })
                 });
 
-                setToken(data.token);
-                setCurrentUser(data.user);
-                window.location.href = './dashboard.html';
+                if (data && data.token) {
+                    setToken(data.token);
+                    setCurrentUser(data.user);
+                    // Yönlendirme
+                    window.location.href = 'dashboard.html';
+                }
             } catch (error) {
-                showError(error.message);
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-user-plus"></i> Kayıt Ol';
+                errorDiv.textContent = error.message;
+                errorDiv.style.display = 'block';
             }
         });
     </script>
