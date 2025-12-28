@@ -4,16 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ayarlar - Nowtify</title>
-    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <nav class="navbar">
         <div class="container">
-            <div class="logo">🎵 NOWTIFY</div>
+            <div class="logo">NOWTIFY</div>
             <div class="nav-links">
-                <a href="/dashboard.html">Dashboard</a>
+                <a href="./dashboard.html">Dashboard</a>
                 <a href="#" id="profile-link">Profilim</a>
-                <a href="/settings.html">Ayarlar</a>
+                <a href="./settings.html">Ayarlar</a>
                 <a href="#" onclick="logout()">Çıkış</a>
             </div>
         </div>
@@ -105,12 +105,12 @@
         </div>
     </div>
 
-    <script src="/js/utils.js"></script>
+    <script src="utils.js"></script>
     <script>
         requireAuth();
 
         const user = getCurrentUser();
-        document.getElementById('profile-link').href = `/profile.html?user=${user.username}`;
+        document.getElementById('profile-link').href = `./profile.html?user=${user.username}`;
         document.getElementById('current-username').textContent = user.username;
 
         // Load current settings
