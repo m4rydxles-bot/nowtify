@@ -42,6 +42,28 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(express.static('.'));
 
+app.get('/', (req, res) => {
+    res.sendFile('index.html', { root: '.' });
+});
+
+app.get('./dashboard', (req, res) => {
+    res.sendFile('dashboard.html', { root: '.' });
+});
+
+app.get('./profile', (req, res) => {
+    res.sendFile('profile.html', { root: '.' });
+});
+
+app.get('./settings', (req, res) => {
+    res.sendFile('settings.html', { root: '.' });
+});
+
+app.get('./signup', (req, res) => {
+    res.sendFile('sipnup.html', { root: '.' });
+});
+
+
+
 // Auth middleware
 const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
