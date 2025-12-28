@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kayıt Ol - Nowtify</title>
-    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="auth-container">
@@ -45,12 +45,12 @@
             </form>
             
             <div class="auth-links">
-                Zaten hesabın var mı? <a href="/index.html">Giriş Yap</a>
+                Zaten hesabın var mı? <a href="./index.html">Giriş Yap</a>
             </div>
         </div>
     </div>
 
-    <script src="/js/utils.js"></script>
+    <script src="utils.js"></script>
     <script>
         requireGuest();
 
@@ -76,7 +76,7 @@
 
                 setToken(data.token);
                 setCurrentUser(data.user);
-                window.location.href = '/dashboard.html';
+                window.location.href = './dashboard.html';
             } catch (error) {
                 showError(error.message);
             }
